@@ -12,76 +12,93 @@ import os
 from apiclient import discovery
 from httplib2 import Http
 from oauth2client import file, client, tools
+import tempfile
 
 import numpy as np
 import requests
 
-SCOPES = 'https://www.googleapis.com/auth/drive.readonly'
-store = file.Storage('storage.json')
-creds = store.get()
-if not creds or creds.invalid:
-    flow = client.flow_from_clientsecrets('client_secret.json', SCOPES)
-    creds = tools.run_flow(flow, store)
-DRIVE = discovery.build('drive', 'v3', http=creds.authorize(Http()))
+def downloader(FILENAME,nozz):
+    SCOPES = 'https://www.googleapis.com/auth/drive.readonly'
+    store = file.Storage('storage.json')
+    creds = store.get()
+    path = os.path.dirname(__file__)
 
-FILENAME = 'UC Quality'
-SRC_MIMETYPE = 'application/vnd.google-apps.spreadsheet'
-DST_MIMETYPE = 'text/csv'
+    if not creds or creds.invalid:
+        secret = os.path.join(path,'client_secret.json')
+        flow = client.flow_from_clientsecrets(secret, SCOPES)
+        creds = tools.run_flow(flow, store)
+    DRIVE = discovery.build('drive', 'v3', http=creds.authorize(Http()))
 
-files = DRIVE.files().list(
-    q='name="%s" and mimeType="%s"' % (FILENAME, SRC_MIMETYPE),
-    orderBy='modifiedTime desc,name').execute().get('files', [])
+    SRC_MIMETYPE = 'application/vnd.google-apps.spreadsheet'
+    DST_MIMETYPE = 'text/csv'
+    with tempfile.TemporaryDirectory() as csvContainer:
+        files = DRIVE.files().list(
+            q='name="%s" and mimeType="%s"' % (FILENAME, SRC_MIMETYPE),
+            orderBy='modifiedTime desc,name').execute().get('files', [])
 
-if files:
-    fn = '%s.csv' % os.path.splitext(files[0]['name'].replace(' ', '_'))[0]
-    print('Exporting "%s" as "%s"... ' % (files[0]['name'], fn), end='')
-    data = DRIVE.files().export(fileId=files[0]['id'], mimeType=DST_MIMETYPE).execute()
-    if data:
-        with open(fn, 'wb') as f:
-            f.write(data)
-        print('DONE')
-    else:
-        print('ERROR (could not download file)')
-else:
-    print('!!! ERROR: File not found')
-
-dt = np.dtype(('U', 128))
-dirName = str(input('What would you like to call the folder?  '))
-
-if not os.path.exists(dirName):
-    os.mkdir(dirName)
-    print("Directory " , dirName ,  " Created ")
-else:
-    print("Directory " , dirName ,  " already exists")
-
-file = open('UC_Quality.csv')
-
-data = np.genfromtxt(file, delimiter=",",dtype=dt)
-data1 = data
-
-headers=data[[0,1],:]
-data = np.delete(data,(0,1),0) #delete rows
-
-
-titles=data[:,0]
-data = np.delete(data, 0,1) #delete columns
-
-r,c=np.shape(data)
-profs = np.zeros((r,c))
-profs = np.array(profs,dtype=dt)
-
-
-for i in range(r):
-    for j in range(c):
-        if i in (0,4,5,12,13):
-            profs[i,j]=titles[i]
+        if files:
+            fn = os.path.join(csvContainer,'Quality'+str(nozz)+'sheet.csv')
+            print('Exporting "%s" as "%s"... ' % (files[0]['name'], fn), end='')
+            data = DRIVE.files().export(fileId=files[0]['id'], mimeType=DST_MIMETYPE).execute()
+            if data:
+                with open(fn, 'wb') as f:
+                    f.write(data)
+                print('DONE')
+            else:
+                print('ERROR (could not download file)')
         else:
-            profs[i,j]=titles[i]+' = '+data[i,j]
+            print('!!! ERROR: File not found')
+
+        dt = np.dtype(('U', 128))
+        print('What would you like to call the folder for nozzle size ', nozz, '?')
+        dirName = os.path.join(path,str(input()))
+
+        if not os.path.exists(dirName):
+            os.mkdir(dirName)
+            print("Directory " , dirName ,  " Created ")
+        else:
+            print("Directory " , dirName ,  " already exists")
+
+        sheet = open(fn)
 
 
-for k in range(c):
-    varient=data[11,k]
 
-    varient=varient.replace(' ','_')
-    filename = dirName + '/' + data[10,k] + '_' + varient + '_' + data[8,k]+'.inst.cfg'
-    np.savetxt(filename, profs[:,k], newline='\n',fmt='%s')
+        data = np.genfromtxt(sheet, delimiter=",",dtype=dt)
+        data1 = data
+
+        headers=data[[0,1],:]
+        data = np.delete(data,(0,1),0) #delete rows
+
+
+        titles=data[:,0]
+        data = np.delete(data, 0,1) #delete columns
+
+        r,c=np.shape(data)
+        profs = np.zeros((r,c))
+        profs = np.array(profs,dtype=dt)
+
+
+        for i in range(r):
+            for j in range(c):
+                if i in (0,4,5,12,13):
+                    profs[i,j]=titles[i]
+                else:
+                    if len(data[i,j])!=0:
+                        profs[i,j]=titles[i]+' = '+data[i,j]
+                    else:
+                        profs[i,j]= ""
+
+
+
+        for k in range(c):
+            varient=data[11,k]
+            name = data[10,k]
+            name = name[0:2]+'n'+name[2:]
+            varient=varient.replace(' ','_')
+            filename = dirName + '/' + name + '_' + varient + '_' + data[8,k]+'.inst.cfg'
+            print(k, " is the number for: ", filename)
+            np.savetxt(filename, profs[:,k], newline='\n',fmt='%s')
+    return
+downloader('UC Quality X 0.25',.25)
+downloader('UC Quality X 0.40',.4)
+downloader('UC Quality X 0.80',.8)
