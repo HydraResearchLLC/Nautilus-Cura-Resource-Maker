@@ -124,11 +124,11 @@ def xmlCrafter(titles,data,directory):
                 hotend.append(ET.Element('setting', key = titles[j]))
                 hotend[l].text = data[j]
                 l+=1
-    metadata[2].text = '#'+metadata[2].text
+
     titlename = os.path.join(directory,'hr_'+data[0]+'_'+data[3]+'.xml.fdm_material').replace(' ','_').lower().replace('-','')
     indent(fdmmaterial)
     mydata = ET.tostring(fdmmaterial,encoding="unicode",method='xml')
-    mydata = mydata.replace('<fdmmaterial>', '<?xml version="1.0" encoding="UTF-8"?>\n<fdmmaterial xmlns="http://www.ultimaker.com/material" version="1.3" xmlns:cura="http://www.ultimaker.com/cura">')
+    mydata = mydata.replace('<fdmmaterial>', '<?xml version="1.0" encoding="UTF-8"?>\n<fdmmaterial xmlns="http://www.ultimaker.com/material" version="1.3" xmlns:cura="http://www.ultimaker.com/cura">').replace('<color_code>','<color_code>#')
     myfile = open(titlename,'w')
     myfile.write(mydata)
     return
