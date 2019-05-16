@@ -96,9 +96,8 @@ def downloader(FILENAME,nozz):
             name = name[0:2]+'n'+name[2:]
             varient=varient.replace(' ','_')
             filename = dirName + '/' + name + '_' + varient + '_' + data[8,k]+'.inst.cfg'
-            print(k, " is the number for: ", filename)
             np.savetxt(filename, profs[:,k], newline='\n',fmt='%s')
     return
-downloader('UC Quality X 0.25',.25)
+downloader('UC Quality B 0.25',.25)
 downloader('UC Quality X 0.40',.4)
 downloader('UC Quality X 0.80',.8)
