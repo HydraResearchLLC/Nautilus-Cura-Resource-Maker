@@ -50,18 +50,8 @@ def downloader(FILENAME,nozz):
             print('!!! ERROR: File not found')
 
         dt = np.dtype(('U', 128))
-        if nozz == .25:
-            titleNo = 'B '
-        else:
-             titleNo = 'X '
 
-        if not os.path.exists(os.path.join(path,'hr_nautilus')):
-            os.mkdir(os.path.join(path,'hr_nautilus'))
-            print("Directory " ,  " Created ")
-        else:
-            print("Directory " ,  " already exists")
-
-        dirName = os.path.join(path,'hr_nautilus',titleNo+str(int(nozz*1000)))
+        dirName = os.path.join(path,'hr_nautilus')
 
         if not os.path.exists(dirName):
             os.mkdir(dirName)
