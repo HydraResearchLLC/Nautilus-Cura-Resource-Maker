@@ -95,6 +95,7 @@ def xmlCrafter(titles,data,directory):
     headers = [name, metadata, properties, settings,machine]
 
     i=k=0
+    colonSignal = list(titles).index("material_flow")
 
     for j in range(len(titles)):
         if titles[j] == '':
@@ -110,7 +111,7 @@ def xmlCrafter(titles,data,directory):
             headers[k][i].text = data[j]
             i += 1
         elif k == 3:
-            if j < 21:
+            if j < colonSignal:
                 headers[k].append(ET.Element('setting', key = titles[j]))
             else:
                 headers[k].append(ET.Element('cura:setting', key = titles[j]))
