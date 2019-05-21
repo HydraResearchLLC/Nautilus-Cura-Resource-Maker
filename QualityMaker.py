@@ -13,6 +13,7 @@ from apiclient import discovery
 from httplib2 import Http
 from oauth2client import file, client, tools
 import tempfile
+import shutil
 
 import numpy as np
 import requests
@@ -58,6 +59,8 @@ def downloader(FILENAME,nozz):
             print("Directory " , dirName ,  " Created ")
         else:
             print("Directory " , dirName ,  " already exists")
+            shutil.rmtree(dirName)
+            os.mkdir(dirName)
 
         sheet = open(fn)
 
