@@ -18,7 +18,18 @@ import shutil
 import numpy as np
 import requests
 
-def downloader(FILENAME,nozz):
+dirName = os.path.join(os.path.dirname(__file__),'hr_nautilus')
+
+if not os.path.exists(dirName):
+    os.mkdir(dirName)
+    print("Directory " , dirName ,  " Created ")
+else:
+    print("Directory " , dirName ,  " already exists")
+    shutil.rmtree(dirName)
+    os.mkdir(dirName)
+
+
+def downloader(FILENAME):
     SCOPES = 'https://www.googleapis.com/auth/drive.readonly'
     store = file.Storage('storage.json')
     creds = store.get()
@@ -38,7 +49,7 @@ def downloader(FILENAME,nozz):
             orderBy='modifiedTime desc,name').execute().get('files', [])
 
         if files:
-            fn = os.path.join(csvContainer,'Quality'+str(nozz)+'sheet.csv')
+            fn = os.path.join(csvContainer,FILENAME+'.csv')
             print('Exporting "%s" as "%s"... ' % (files[0]['name'], fn), end='')
             data = DRIVE.files().export(fileId=files[0]['id'], mimeType=DST_MIMETYPE).execute()
             if data:
@@ -48,59 +59,89 @@ def downloader(FILENAME,nozz):
             else:
                 print('ERROR (could not download file)')
         else:
-            print('!!! ERROR: File not found')
-
+             print('!!! ERROR: File not found')
         dt = np.dtype(('U', 128))
-
-        dirName = os.path.join(path,'hr_nautilus')
-
-        if not os.path.exists(dirName):
-            os.mkdir(dirName)
-            print("Directory " , dirName ,  " Created ")
-        else:
-            print("Directory " , dirName ,  " already exists")
-            shutil.rmtree(dirName)
-            os.mkdir(dirName)
 
         sheet = open(fn)
 
 
 
         data = np.genfromtxt(sheet, delimiter=",",dtype=dt)
-        data1 = data
+    return data,dt
 
-        headers=data[[0,1],:]
-        data = np.delete(data,(0,1),0) #delete rows
+def qualBuilder(sheetName):
+    data,dt = downloader(sheetName)
+    data1 = data
 
-
-        titles=data[:,0]
-        data = np.delete(data, 0,1) #delete columns
-
-        r,c=np.shape(data)
-        profs = np.zeros((r,c))
-        profs = np.array(profs,dtype=dt)
+    headers=data[[0,1],:]
+    data = np.delete(data,(0,1),0) #delete rows
 
 
-        for i in range(r):
-            for j in range(c):
-                if i in (0,4,5,12,13):
-                    profs[i,j]=titles[i]
+    titles=data[:,0]
+    data = np.delete(data, 0,1) #delete columns
+
+    r,c=np.shape(data)
+    profs = np.zeros((r,c))
+    profs = np.array(profs,dtype=dt)
+
+
+    for i in range(r):
+        for j in range(c):
+            if i in (0,4,5,12,13):
+                profs[i,j]=titles[i]
+            else:
+                if len(data[i,j])!=0:
+                    profs[i,j]=titles[i]+' = '+data[i,j]
                 else:
-                    if len(data[i,j])!=0:
-                        profs[i,j]=titles[i]+' = '+data[i,j]
-                    else:
-                        profs[i,j]= ""
+                    profs[i,j]= ""
 
-
-
-        for k in range(c):
-            varient=data[11,k]
-            name = data[10,k]
-            name = name[0:2]+'n'+name[2:]
-            varient=varient.replace(' ','_')
-            filename = dirName + '/' + name + '_' + varient + '_' + data[8,k]+'.inst.cfg'
-            np.savetxt(filename, profs[:,k], newline='\n',fmt='%s')
+    for k in range(c):
+        varient=data[11,k]
+        name = data[10,k]
+        name = name[0:2]+'n'+name[2:]
+        varient=varient.replace(' ','_')
+        filename = dirName + '/' + name + '_' + varient + '_' + data[8,k]+'.inst.cfg'
+        np.savetxt(filename, profs[:,k], newline='\n',fmt='%s')
     return
-downloader('UC Quality B 0.25',.25)
-downloader('UC Quality X 0.40',.4)
-downloader('UC Quality X 0.80',.8)
+
+def globalQualBuilder(sheetName):
+    data,dt = downloader(sheetName)
+    data1 = data
+
+    headers=data[[0,1],:]
+    data = np.delete(data,(0,1),0) #delete rows
+
+
+    titles=data[:,0]
+    data = np.delete(data, 0,1) #delete columns
+
+    r,c=np.shape(data)
+    profs = np.zeros((r,c))
+    profs = np.array(profs,dtype=dt)
+
+
+    for i in range(r):
+        for j in range(c):
+            if i in (0,4,5,12):
+                profs[i,j]=titles[i]
+                #print('count',profs[i,j])
+            else:
+                if len(data[i,j])!=0:
+                    profs[i,j]=titles[i]+' = '+data[i,j]
+                    #print('not count',profs[i,j])
+                else:
+                    profs[i,j]= ""
+
+    for k in range(c):
+        varient=data[11,k]
+        name = data[10,k]
+        name = name[0:2]+'n'+name[2:]
+        varient=varient.replace(' ','_')
+        filename = dirName + '/hrn_global_' + data[8,k]+'_quality.inst.cfg'
+        np.savetxt(filename, profs[:,k], newline='\n',fmt='%s')
+    return
+
+qualBuilder('UC Quality B 0.25')
+qualBuilder('UC Quality X 0.40')
+qualBuilder('UC Quality X 0.80')
+globalQualBuilder('UC Quality Global')
