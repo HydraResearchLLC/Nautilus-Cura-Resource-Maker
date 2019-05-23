@@ -76,7 +76,7 @@ def downloader(FILENAME):
 
         sheet = open(fn)
         sheetData = np.genfromtxt(sheet, delimiter = '\t', dtype=np.dtype(('U', 512)),filling_values=1)
-        print('the size is ',sheetData.shape)
+
         sheetData = np.delete(sheetData, (0), axis=0)
         catTitles = sheetData[:,0]
         for i in range(1,len(sheetData[1])):
