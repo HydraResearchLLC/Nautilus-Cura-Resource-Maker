@@ -47,14 +47,14 @@ def downloader(FILENAME):
     DRIVE = discovery.build('drive', 'v3', http=creds.authorize(Http()))
 
     SRC_MIMETYPE = 'application/vnd.google-apps.spreadsheet'
-    DST_MIMETYPE = 'text/csv'
-    with tempfile.TemporaryDirectory() as csvContainer:
+    DST_MIMETYPE = 'text/tab-separated-values'
+    with tempfile.TemporaryDirectory() as tsvContainer:
         files = DRIVE.files().list(
             q='name="%s" and mimeType="%s"' % (FILENAME, SRC_MIMETYPE),
             orderBy='modifiedTime desc,name').execute().get('files', [])
 
         if files:
-            fn = os.path.join(csvContainer,'NautilusMat.csv')
+            fn = os.path.join(tsvContainer,'NautilusMat.tsv')
             print('Exporting "%s" as "%s"... ' % (files[0]['name'], fn), end='')
             data = DRIVE.files().export(fileId=files[0]['id'], mimeType=DST_MIMETYPE).execute()
             if data:
@@ -75,7 +75,8 @@ def downloader(FILENAME):
             print("Directory " , dirName ,  " already exists")
 
         sheet = open(fn)
-        sheetData = np.genfromtxt(sheet, delimiter=",",dtype=np.dtype(('U', 128)))
+        sheetData = np.genfromtxt(sheet, delimiter = '\t', dtype=np.dtype(('U', 512)),filling_values=1)
+        print('the size is ',sheetData.shape)
         sheetData = np.delete(sheetData, (0), axis=0)
         catTitles = sheetData[:,0]
         for i in range(1,len(sheetData[1])):
