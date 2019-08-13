@@ -80,9 +80,8 @@ def downloader(FILENAME):
         sheetData = np.delete(sheetData, (0), axis=0)
         catTitles = sheetData[:,0]
         for i in range(1,len(sheetData[1])):
-            catData = sheetData[:,i]
+            catData = [s.replace('@',' ') for s in sheetData[:,i]]
             xmlCrafter(catTitles,catData,dirName)
-
     return
 
 def xmlCrafter(titles,data,directory):
