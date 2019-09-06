@@ -121,6 +121,10 @@ def xmlCrafter(titles,data,directory):
             if 'hot' in titles[j]:
                 l = 0
                 hotend = ET.SubElement(machine, titles[j], id = data[j])
+            elif '_' in titles[j]:
+                hotend.append(ET.Element('cura:setting', key = titles[j]))
+                hotend[l].text = data[j]
+                l+=1
             else:
                 hotend.append(ET.Element('setting', key = titles[j]))
                 hotend[l].text = data[j]
